@@ -25,6 +25,8 @@ int colorId = 0;
 float lightX = 1.0f;
 float lightY = 1.0f;
 std::string filename = "";
+int angle = 0;
+bool spin = false;
 
 // These are convenience functions which allow us to call OpenGL 
 // methods on Vec3d objects
@@ -39,6 +41,19 @@ inline void glNormal(const Vector3f &a)
 }
 
 
+//
+void rotate(int value) {
+	if(spin){
+		if (angle > 360) {
+			angle = 0;
+		}
+		angle++;
+		glutPostRedisplay();
+		glutTimerFunc(10, rotate, 0);
+		cout << "Angle: " << angle << "\n";
+	}
+}
+
 // This function is called whenever a "Normal" key press is received.
 void keyboardFunc(unsigned char key, int x, int y)
 {
@@ -46,6 +61,11 @@ void keyboardFunc(unsigned char key, int x, int y)
 	{
 	case 27: // Escape key
 		exit(0);
+		break;
+
+	case 'r':
+		spin = !spin;
+		glutTimerFunc(0, rotate, 0);
 		break;
 	case 'c':
 		// add code to change color here
@@ -136,6 +156,7 @@ void drawScene(void)
 
 	glLightfv(GL_LIGHT0, GL_DIFFUSE, Lt0diff);
 	glLightfv(GL_LIGHT0, GL_POSITION, Lt0pos);
+	glRotatef(angle, 0, 1, 0);
 
 	// This GLUT method draws a teapot.  You should replace
 	// it with code which draws the object you loaded.
@@ -281,6 +302,8 @@ int main(int argc, char** argv)
 
 	// Start the main loop.  glutMainLoop never returns.
 	glutMainLoop();
+
+	
 
 	return 0;	// This line is never reached.
 }
