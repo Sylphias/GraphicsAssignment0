@@ -27,6 +27,16 @@ float lightY = 1.0f;
 std::string filename = "";
 int angle = 0;
 bool spin = false;
+// Set material properties of object
+GLfloat diffColors[4][4] = { { 0.5, 0.5, 0.9, 1.0 },
+{ 0.9, 0.5, 0.5, 1.0 },
+{ 0.5, 0.9, 0.3, 1.0 },
+{ 0.3, 0.8, 0.9, 1.0 } };
+GLfloat startColor[4] = { 0.5, 0.5, 0.9,1.0 };
+GLfloat currentColor[4] = { 0.5, 0.5, 0.9,1.0 };
+GLfloat endColor[4] = { 0.5, 0.5, 0.9,1.0 };
+
+bool changeColor = false;
 
 // These are convenience functions which allow us to call OpenGL 
 // methods on Vec3d objects
@@ -41,22 +51,38 @@ inline void glNormal(const Vector3f &a)
 }
 
 
-//
-void rotate(int value) {
+// this method updates the rotation
+void rotate(int val) {
 	if(spin){
 		if (angle > 360) {
 			angle = 0;
 		}
-		angle++;
+		angle += val;
 		glutPostRedisplay();
-		glutTimerFunc(10, rotate, 0);
+		glutTimerFunc(10, rotate, 1);
 		cout << "Angle: " << angle << "\n";
 	}
 }
 
+
+// Smoothly translate between colors 
+void transitionColor(int value) {
+	if (value !=0) {
+		for (int i = 0; i < 3; i++) {
+			
+			GLfloat diff = (endColor[i] - startColor[i])/100 ;
+			if ((diff <= 0 && currentColor[i] > endColor[i]) || (diff >= 0 && currentColor[i] < endColor[i])) {
+				currentColor[i] += diff;
+			}
+		}
+		glutPostRedisplay();
+		glutTimerFunc(10, transitionColor, --value);
+	}
+}
 // This function is called whenever a "Normal" key press is received.
 void keyboardFunc(unsigned char key, int x, int y)
 {
+	int oldColorId = 0;
 	switch (key)
 	{
 	case 27: // Escape key
@@ -65,12 +91,19 @@ void keyboardFunc(unsigned char key, int x, int y)
 
 	case 'r':
 		spin = !spin;
-		glutTimerFunc(0, rotate, 0);
+		glutTimerFunc(0, rotate, 1);
 		break;
 	case 'c':
 		// add code to change color here
+		oldColorId = colorId;
 		colorId = (colorId + 1) % 4;
+		cout << "Old Color Id = " << oldColorId << "." << endl;
 		cout << "Color Id = " << colorId << "." << endl;
+		for (int i = 0; i < 4; i++) {
+			startColor[i] = diffColors[oldColorId][i];
+			endColor[i] = diffColors[colorId][i];
+		}
+		glutTimerFunc(0, transitionColor, 100);
 		break;
 
 	default:
@@ -128,16 +161,10 @@ void drawScene(void)
 		0.0, 0.0, 0.0,
 		0.0, 1.0, 0.0);
 
-	// Set material properties of object
-
-	// Here are some colors you might use - feel free to add more
-	GLfloat diffColors[4][4] = { { 0.5, 0.5, 0.9, 1.0 },
-	{ 0.9, 0.5, 0.5, 1.0 },
-	{ 0.5, 0.9, 0.3, 1.0 },
-	{ 0.3, 0.8, 0.9, 1.0 } };
-
+	
+	
 	// Here we use the first color entry as the diffuse color
-	glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT_AND_DIFFUSE, diffColors[colorId]);
+	glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT_AND_DIFFUSE, currentColor);
 
 	// Define specular color and shininess
 	GLfloat specColor[] = { 1.0, 1.0, 1.0, 1.0 };
@@ -276,7 +303,6 @@ void loadInput()
 int main(int argc, char** argv)
 {
 	loadInput();
-
 	glutInit(&argc, argv);
 
 	// We're going to animate it, so double buffer 
